@@ -22,6 +22,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -40,12 +41,15 @@ public class FlightController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Optional<LocalDateTime> dateFrom,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Optional<LocalDateTime> dateTo,
             @RequestParam Optional<Long> routeId,
-            @RequestParam Optional<FlightStatus> status
+            @RequestParam Optional<FlightStatus> status,
+            @RequestParam Optional<String> origin,
+            @RequestParam Optional<String> destination,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Optional<LocalDate> date
     ) {
         if (userDetails.getUser().hasRole(RoleName.EMPLOYEE) || userDetails.getUser().hasRole(RoleName.ADMIN)) {
-            return flightService.list(pageable, dateFrom, dateTo, routeId, status);
+            return flightService.list(pageable, dateFrom, dateTo, routeId, status, origin, destination, date);
         } else {
-            return flightService.listForPassenger(userDetails.getUserId(), pageable, dateFrom, dateTo, routeId, status);
+            return flightService.listForPassenger(userDetails.getUserId(), pageable, dateFrom, dateTo, routeId, status, origin, destination, date);
         }
     }
 

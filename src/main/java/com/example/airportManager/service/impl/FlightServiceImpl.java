@@ -25,6 +25,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -47,7 +48,10 @@ public class FlightServiceImpl implements FlightService {
             Optional<LocalDateTime> dateFrom,
             Optional<LocalDateTime> dateTo,
             Optional<Long> routeId,
-            Optional<FlightStatus> status
+            Optional<FlightStatus> status,
+            Optional<String> origin,
+            Optional<String> destination,
+            Optional<LocalDate> date
     ) {
         Specification<Flight> spec = Specification.where(null);
         if (dateFrom.isPresent() || dateTo.isPresent()) {
@@ -58,6 +62,15 @@ public class FlightServiceImpl implements FlightService {
         }
         if (status.isPresent()) {
             spec = spec.and(FlightSpecifications.hasStatus(status.get()));
+        }
+        if (origin.isPresent()) {
+            spec = spec.and(FlightSpecifications.hasOriginCity(origin.get()));
+        }
+        if (destination.isPresent()) {
+            spec = spec.and(FlightSpecifications.hasDestCity(destination.get()));
+        }
+        if (date.isPresent()) {
+            spec = spec.and(FlightSpecifications.departureOnDate(date.get()));
         }
         return flightRepository.findAll(spec, pageable)
                 .map(flightMapper::toResponse);
@@ -112,7 +125,10 @@ public class FlightServiceImpl implements FlightService {
             Optional<LocalDateTime> dateFrom,
             Optional<LocalDateTime> dateTo,
             Optional<Long> routeId,
-            Optional<FlightStatus> status
+            Optional<FlightStatus> status,
+            Optional<String> origin,
+            Optional<String> destination,
+            Optional<LocalDate> date
     ) {
         List<Booking> bookings = bookingRepository.findByPassengerProfileUserId(passengerId);
         List<Long> flightIds = bookings.stream()
@@ -132,6 +148,15 @@ public class FlightServiceImpl implements FlightService {
         }
         if (status.isPresent()) {
             spec = spec.and(FlightSpecifications.hasStatus(status.get()));
+        }
+        if (origin.isPresent()) {
+            spec = spec.and(FlightSpecifications.hasOriginCity(origin.get()));
+        }
+        if (destination.isPresent()) {
+            spec = spec.and(FlightSpecifications.hasDestCity(destination.get()));
+        }
+        if (date.isPresent()) {
+            spec = spec.and(FlightSpecifications.departureOnDate(date.get()));
         }
         return flightRepository.findAll(spec, pageable)
                 .map(flightMapper::toResponse);
