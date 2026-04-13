@@ -4,7 +4,6 @@ import com.example.airportManager.dto.flight.FlightCreateDTO;
 import com.example.airportManager.dto.flight.FlightDetailResponseDTO;
 import com.example.airportManager.dto.flight.FlightResponseDTO;
 import com.example.airportManager.model.FlightStatus;
-import com.example.airportManager.model.RoleName;
 import com.example.airportManager.security.CustomUserDetails;
 import com.example.airportManager.service.FlightService;
 import jakarta.validation.Valid;
@@ -36,6 +35,21 @@ public class FlightController {
     @GetMapping
     @PreAuthorize("hasAnyRole('PASSENGER', 'EMPLOYEE', 'ADMIN')")
     public Page<FlightResponseDTO> list(
+            @ParameterObject @PageableDefault(sort = "departureScheduled", direction = Sort.Direction.ASC) Pageable pageable,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Optional<LocalDateTime> dateFrom,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Optional<LocalDateTime> dateTo,
+            @RequestParam Optional<Long> routeId,
+            @RequestParam Optional<FlightStatus> status,
+            @RequestParam Optional<String> origin,
+            @RequestParam Optional<String> destination,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Optional<LocalDate> date
+    ) {
+        return flightService.list(pageable, dateFrom, dateTo, routeId, status, origin, destination, date);
+    }
+
+    @GetMapping("/my")
+    @PreAuthorize("hasRole('PASSENGER')")
+    public Page<FlightResponseDTO> listMyFlights(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @ParameterObject @PageableDefault(sort = "departureScheduled", direction = Sort.Direction.ASC) Pageable pageable,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Optional<LocalDateTime> dateFrom,
@@ -46,11 +60,7 @@ public class FlightController {
             @RequestParam Optional<String> destination,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Optional<LocalDate> date
     ) {
-        if (userDetails.getUser().hasRole(RoleName.EMPLOYEE) || userDetails.getUser().hasRole(RoleName.ADMIN)) {
-            return flightService.list(pageable, dateFrom, dateTo, routeId, status, origin, destination, date);
-        } else {
-            return flightService.listForPassenger(userDetails.getUserId(), pageable, dateFrom, dateTo, routeId, status, origin, destination, date);
-        }
+        return flightService.listForPassenger(userDetails.getUserId(), pageable, dateFrom, dateTo, routeId, status, origin, destination, date);
     }
 
     @GetMapping("/{id}")
