@@ -4,6 +4,7 @@ import com.example.airportManager.dto.flight.FlightCreateDTO;
 import com.example.airportManager.dto.flight.FlightDetailResponseDTO;
 import com.example.airportManager.dto.flight.FlightResponseDTO;
 import com.example.airportManager.model.FlightStatus;
+import com.example.airportManager.model.RoleName;
 import com.example.airportManager.security.CustomUserDetails;
 import com.example.airportManager.service.FlightService;
 import jakarta.validation.Valid;
