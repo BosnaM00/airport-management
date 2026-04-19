@@ -49,4 +49,9 @@ public final class FlightSpecifications {
                        date.atStartOfDay(),
                        date.plusDays(1).atStartOfDay());
     }
+
+    public static Specification<Flight> hasCode(String code) {
+        return (root, query, cb) -> (code == null || code.isBlank()) ? null :
+            cb.like(cb.lower(root.get("code")), "%" + code.toLowerCase() + "%");
+    }
 }

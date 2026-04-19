@@ -9,9 +9,15 @@ public record FlightDetailResponseDTO(
         Long id,
         String code,
         Long routeId,
+        String originCity,
+        String originIata,
+        String destCity,
+        String destIata,
         LocalDateTime departureTime,
         LocalDateTime arrivalTime,
         FlightStatus status,
         String gate,
+        Long aircraftId,
+        String aircraftModel,
         List<PassengerInfoDTO> passengers
 ) {}

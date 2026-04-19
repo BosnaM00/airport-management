@@ -10,6 +10,8 @@ import com.example.airportManager.model.Booking;
 import com.example.airportManager.model.Flight;
 import com.example.airportManager.model.FlightStatus;
 import com.example.airportManager.model.Route;
+import com.example.airportManager.model.Aircraft;
+import com.example.airportManager.repository.AircraftRepository;
 import com.example.airportManager.repository.BookingRepository;
 import com.example.airportManager.repository.FlightRepository;
 import com.example.airportManager.repository.RouteRepository;
@@ -38,6 +40,7 @@ import java.util.stream.Collectors;
 public class FlightServiceImpl implements FlightService {
     private final FlightRepository flightRepository;
     private final RouteRepository routeRepository;
+    private final AircraftRepository aircraftRepository;
     private final BookingRepository bookingRepository;
     private final FlightMapper flightMapper;
 
@@ -45,6 +48,7 @@ public class FlightServiceImpl implements FlightService {
     @Transactional(readOnly = true)
     public Page<FlightResponseDTO> list(
             Pageable pageable,
+            Optional<String> code,
             Optional<LocalDateTime> dateFrom,
             Optional<LocalDateTime> dateTo,
             Optional<Long> routeId,
@@ -54,6 +58,9 @@ public class FlightServiceImpl implements FlightService {
             Optional<LocalDate> date
     ) {
         Specification<Flight> spec = Specification.where(null);
+        if (code.isPresent()) {
+            spec = spec.and(FlightSpecifications.hasCode(code.get()));
+        }
         if (dateFrom.isPresent() || dateTo.isPresent()) {
             spec = spec.and(FlightSpecifications.departureBetween(dateFrom.orElse(null), dateTo.orElse(null)));
         }
@@ -88,6 +95,13 @@ public class FlightServiceImpl implements FlightService {
 
         Flight flight = flightMapper.toEntity(dto);
         flight.setRoute(route);
+        flight.setGate(dto.gate());
+
+        if (dto.aircraftId() != null) {
+            Aircraft aircraft = aircraftRepository.findById(dto.aircraftId())
+                    .orElseThrow(() -> new EntityNotFoundException("Aircraft not found with id: " + dto.aircraftId()));
+            flight.setAircraft(aircraft);
+        }
 
         Flight saved = flightRepository.save(flight);
         return flightMapper.toResponse(saved);
@@ -112,6 +126,15 @@ public class FlightServiceImpl implements FlightService {
         flight.setDepartureScheduled(dto.departureTime());
         flight.setArrivalScheduled(dto.arrivalTime());
         flight.setStatus(dto.status());
+        flight.setGate(dto.gate());
+
+        if (dto.aircraftId() != null) {
+            Aircraft aircraft = aircraftRepository.findById(dto.aircraftId())
+                    .orElseThrow(() -> new EntityNotFoundException("Aircraft not found with id: " + dto.aircraftId()));
+            flight.setAircraft(aircraft);
+        } else {
+            flight.setAircraft(null);
+        }
 
         Flight updated = flightRepository.save(flight);
         return flightMapper.toResponse(updated);
@@ -122,6 +145,7 @@ public class FlightServiceImpl implements FlightService {
     public Page<FlightResponseDTO> listForPassenger(
             UUID passengerId,
             Pageable pageable,
+            Optional<String> code,
             Optional<LocalDateTime> dateFrom,
             Optional<LocalDateTime> dateTo,
             Optional<Long> routeId,
@@ -140,6 +164,9 @@ public class FlightServiceImpl implements FlightService {
         }
 
         Specification<Flight> spec = Specification.where((root, query, cb) -> root.get("id").in(flightIds));
+        if (code.isPresent()) {
+            spec = spec.and(FlightSpecifications.hasCode(code.get()));
+        }
         if (dateFrom.isPresent() || dateTo.isPresent()) {
             spec = spec.and(FlightSpecifications.departureBetween(dateFrom.orElse(null), dateTo.orElse(null)));
         }
@@ -184,16 +211,7 @@ public class FlightServiceImpl implements FlightService {
                     .collect(Collectors.toList());
         }
 
-        return new FlightDetailResponseDTO(
-                flight.getId(),
-                flight.getCode(),
-                flight.getRoute().getId(),
-                flight.getDepartureScheduled(),
-                flight.getArrivalScheduled(),
-                flight.getStatus(),
-                flight.getGate(),
-                passengers
-        );
+        return buildDetailResponse(flight, passengers);
     }
 
     @Override
@@ -206,15 +224,25 @@ public class FlightServiceImpl implements FlightService {
             throw new AccessDeniedException("You are not registered for this flight");
         }
 
+        return buildDetailResponse(flight, Collections.emptyList());
+    }
+
+    private FlightDetailResponseDTO buildDetailResponse(Flight flight, List<PassengerInfoDTO> passengers) {
         return new FlightDetailResponseDTO(
                 flight.getId(),
                 flight.getCode(),
                 flight.getRoute().getId(),
+                flight.getRoute().getOriginAirport().getCity(),
+                flight.getRoute().getOriginAirport().getIata(),
+                flight.getRoute().getDestAirport().getCity(),
+                flight.getRoute().getDestAirport().getIata(),
                 flight.getDepartureScheduled(),
                 flight.getArrivalScheduled(),
                 flight.getStatus(),
                 flight.getGate(),
-                Collections.emptyList()
+                flight.getAircraft() != null ? flight.getAircraft().getId() : null,
+                flight.getAircraft() != null ? flight.getAircraft().getModel() : null,
+                passengers
         );
     }
 

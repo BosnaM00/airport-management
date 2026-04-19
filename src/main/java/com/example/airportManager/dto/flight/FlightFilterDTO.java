@@ -5,10 +5,13 @@ import com.example.airportManager.model.FlightStatus;
 import java.time.LocalDateTime;
 
 public record FlightFilterDTO(
+        String code,
         LocalDateTime dateFrom,
         LocalDateTime dateTo,
         Long routeId,
         FlightStatus status,
+        String origin,
+        String destination,
         Integer page,
         Integer size,
         String sort

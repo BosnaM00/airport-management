@@ -15,6 +15,10 @@ public interface RouteMapper {
     Route toEntity(RouteCreateDTO dto);
 
     @Mapping(target = "originAirportId", source = "originAirport.id")
+    @Mapping(target = "originCity", source = "originAirport.city")
+    @Mapping(target = "originIata", source = "originAirport.iata")
     @Mapping(target = "destAirportId", source = "destAirport.id")
+    @Mapping(target = "destCity", source = "destAirport.city")
+    @Mapping(target = "destIata", source = "destAirport.iata")
     RouteResponseDTO toResponse(Route entity);
 }

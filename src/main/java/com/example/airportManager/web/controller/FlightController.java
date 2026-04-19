@@ -37,6 +37,7 @@ public class FlightController {
     @PreAuthorize("hasAnyRole('PASSENGER', 'EMPLOYEE', 'ADMIN')")
     public Page<FlightResponseDTO> list(
             @ParameterObject @PageableDefault(sort = "departureScheduled", direction = Sort.Direction.ASC) Pageable pageable,
+            @RequestParam Optional<String> code,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Optional<LocalDateTime> dateFrom,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Optional<LocalDateTime> dateTo,
             @RequestParam Optional<Long> routeId,
@@ -45,7 +46,7 @@ public class FlightController {
             @RequestParam Optional<String> destination,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Optional<LocalDate> date
     ) {
-        return flightService.list(pageable, dateFrom, dateTo, routeId, status, origin, destination, date);
+        return flightService.list(pageable, code, dateFrom, dateTo, routeId, status, origin, destination, date);
     }
 
     @GetMapping("/my")
@@ -53,6 +54,7 @@ public class FlightController {
     public Page<FlightResponseDTO> listMyFlights(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @ParameterObject @PageableDefault(sort = "departureScheduled", direction = Sort.Direction.ASC) Pageable pageable,
+            @RequestParam Optional<String> code,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Optional<LocalDateTime> dateFrom,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Optional<LocalDateTime> dateTo,
             @RequestParam Optional<Long> routeId,
@@ -61,7 +63,7 @@ public class FlightController {
             @RequestParam Optional<String> destination,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Optional<LocalDate> date
     ) {
-        return flightService.listForPassenger(userDetails.getUserId(), pageable, dateFrom, dateTo, routeId, status, origin, destination, date);
+        return flightService.listForPassenger(userDetails.getUserId(), pageable, code, dateFrom, dateTo, routeId, status, origin, destination, date);
     }
 
     @GetMapping("/{id}")

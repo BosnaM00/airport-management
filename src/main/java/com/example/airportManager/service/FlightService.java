@@ -15,6 +15,7 @@ import java.util.UUID;
 public interface FlightService {
     Page<FlightResponseDTO> list(
             Pageable pageable,
+            Optional<String> code,
             Optional<LocalDateTime> dateFrom,
             Optional<LocalDateTime> dateTo,
             Optional<Long> routeId,
@@ -26,6 +27,7 @@ public interface FlightService {
     Page<FlightResponseDTO> listForPassenger(
             UUID passengerId,
             Pageable pageable,
+            Optional<String> code,
             Optional<LocalDateTime> dateFrom,
             Optional<LocalDateTime> dateTo,
             Optional<Long> routeId,
