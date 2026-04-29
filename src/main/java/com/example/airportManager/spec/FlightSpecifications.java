@@ -4,6 +4,7 @@ import com.example.airportManager.model.Flight;
 import com.example.airportManager.model.FlightStatus;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public final class FlightSpecifications {
@@ -28,5 +29,29 @@ public final class FlightSpecifications {
 
     public static Specification<Flight> hasStatus(FlightStatus status) {
         return (root, query, cb) -> status == null ? null : cb.equal(root.get("status"), status);
+    }
+
+    public static Specification<Flight> hasOriginCity(String city) {
+        return (root, query, cb) -> city == null ? null :
+            cb.like(cb.lower(root.get("route").get("originAirport").get("city")),
+                    "%" + city.toLowerCase() + "%");
+    }
+
+    public static Specification<Flight> hasDestCity(String city) {
+        return (root, query, cb) -> city == null ? null :
+            cb.like(cb.lower(root.get("route").get("destAirport").get("city")),
+                    "%" + city.toLowerCase() + "%");
+    }
+
+    public static Specification<Flight> departureOnDate(LocalDate date) {
+        return (root, query, cb) -> date == null ? null :
+            cb.between(root.get("departureScheduled"),
+                       date.atStartOfDay(),
+                       date.plusDays(1).atStartOfDay());
+    }
+
+    public static Specification<Flight> hasCode(String code) {
+        return (root, query, cb) -> (code == null || code.isBlank()) ? null :
+            cb.like(cb.lower(root.get("code")), "%" + code.toLowerCase() + "%");
     }
 }

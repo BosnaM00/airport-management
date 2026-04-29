@@ -13,5 +13,7 @@ public record FlightCreateDTO(
         @NotNull Long routeId,
         @NotNull LocalDateTime departureTime,
         @NotNull LocalDateTime arrivalTime,
-        @NotNull FlightStatus status
+        @NotNull FlightStatus status,
+        String gate,
+        Long aircraftId
 ) {}

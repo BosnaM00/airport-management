@@ -8,7 +8,13 @@ public record FlightResponseDTO(
         Long id,
         String code,
         Long routeId,
+        String originCity,
+        String originIata,
+        String destCity,
+        String destIata,
         LocalDateTime departureTime,
         LocalDateTime arrivalTime,
+        String gate,
+        Long aircraftId,
         FlightStatus status
 ) {}

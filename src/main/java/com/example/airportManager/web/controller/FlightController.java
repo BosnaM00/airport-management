@@ -22,6 +22,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -35,18 +36,34 @@ public class FlightController {
     @GetMapping
     @PreAuthorize("hasAnyRole('PASSENGER', 'EMPLOYEE', 'ADMIN')")
     public Page<FlightResponseDTO> list(
-            @AuthenticationPrincipal CustomUserDetails userDetails,
             @ParameterObject @PageableDefault(sort = "departureScheduled", direction = Sort.Direction.ASC) Pageable pageable,
+            @RequestParam Optional<String> code,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Optional<LocalDateTime> dateFrom,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Optional<LocalDateTime> dateTo,
             @RequestParam Optional<Long> routeId,
-            @RequestParam Optional<FlightStatus> status
+            @RequestParam Optional<FlightStatus> status,
+            @RequestParam Optional<String> origin,
+            @RequestParam Optional<String> destination,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Optional<LocalDate> date
     ) {
-        if (userDetails.getUser().hasRole(RoleName.EMPLOYEE) || userDetails.getUser().hasRole(RoleName.ADMIN)) {
-            return flightService.list(pageable, dateFrom, dateTo, routeId, status);
-        } else {
-            return flightService.listForPassenger(userDetails.getUserId(), pageable, dateFrom, dateTo, routeId, status);
-        }
+        return flightService.list(pageable, code, dateFrom, dateTo, routeId, status, origin, destination, date);
+    }
+
+    @GetMapping("/my")
+    @PreAuthorize("hasRole('PASSENGER')")
+    public Page<FlightResponseDTO> listMyFlights(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @ParameterObject @PageableDefault(sort = "departureScheduled", direction = Sort.Direction.ASC) Pageable pageable,
+            @RequestParam Optional<String> code,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Optional<LocalDateTime> dateFrom,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Optional<LocalDateTime> dateTo,
+            @RequestParam Optional<Long> routeId,
+            @RequestParam Optional<FlightStatus> status,
+            @RequestParam Optional<String> origin,
+            @RequestParam Optional<String> destination,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Optional<LocalDate> date
+    ) {
+        return flightService.listForPassenger(userDetails.getUserId(), pageable, code, dateFrom, dateTo, routeId, status, origin, destination, date);
     }
 
     @GetMapping("/{id}")

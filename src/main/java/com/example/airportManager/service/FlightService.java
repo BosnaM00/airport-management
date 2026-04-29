@@ -7,6 +7,7 @@ import com.example.airportManager.model.FlightStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -14,18 +15,26 @@ import java.util.UUID;
 public interface FlightService {
     Page<FlightResponseDTO> list(
             Pageable pageable,
+            Optional<String> code,
             Optional<LocalDateTime> dateFrom,
             Optional<LocalDateTime> dateTo,
             Optional<Long> routeId,
-            Optional<FlightStatus> status
+            Optional<FlightStatus> status,
+            Optional<String> origin,
+            Optional<String> destination,
+            Optional<LocalDate> date
     );
     Page<FlightResponseDTO> listForPassenger(
             UUID passengerId,
             Pageable pageable,
+            Optional<String> code,
             Optional<LocalDateTime> dateFrom,
             Optional<LocalDateTime> dateTo,
             Optional<Long> routeId,
-            Optional<FlightStatus> status
+            Optional<FlightStatus> status,
+            Optional<String> origin,
+            Optional<String> destination,
+            Optional<LocalDate> date
     );
     FlightDetailResponseDTO getById(Long id, boolean includePassengers);
     FlightDetailResponseDTO getByIdForPassenger(Long id, UUID passengerId);
