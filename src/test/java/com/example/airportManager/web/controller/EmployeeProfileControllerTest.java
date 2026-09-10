@@ -30,19 +30,43 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+// Slice test for EmployeeProfileController. @WebMvcTest(EmployeeProfileController.class)
+// boots ONLY the web layer: this controller, Spring MVC infrastructure, and the security
+// filter chain - not the full application context.
+//
+// @WebMvcTest applies its own restrictive default security configuration, so the real
+// SecurityConfig must be explicitly re-imported via @Import for the actual authorization
+// rules to be exercised. JwtAuthenticationFilter is imported as a REAL bean (not
+// @MockitoBean): a Mockito mock of a Servlet Filter never calls chain.doFilter(...),
+// which would silently swallow every request - the single most important gotcha in this
+// test suite.
+//
 // EmployeeProfileController is class-level @PreAuthorize("hasRole('EMPLOYEE')") -> every
 // endpoint must reject anonymous callers and non-EMPLOYEE roles, and accept EMPLOYEE.
+// SecurityConfig separately restricts "/api/employee/profile/**" to EMPLOYEE at the HTTP
+// filter level (.requestMatchers("/api/employee/profile/**").hasRole("EMPLOYEE")) - both
+// layers enforce the same rule independently (defense in depth).
 // Endpoints also read the caller's identity via @AuthenticationPrincipal CustomUserDetails.
 @WebMvcTest(EmployeeProfileController.class)
 @Import({SecurityConfig.class, JwtAuthenticationFilter.class})
 class EmployeeProfileControllerTest {
 
+    // Entry point for simulated HTTP requests against the web layer loaded by
+    // @WebMvcTest; runs through the real filter chain (SecurityConfig +
+    // JwtAuthenticationFilter included).
     @Autowired
     private MockMvc mvc;
 
+    // @MockitoBean replaces the real EmployeeProfileService bean with a Mockito mock
+    // (modern, non-deprecated replacement for @MockBean); only methods stubbed with
+    // when(...) below return data.
     @MockitoBean
     private EmployeeProfileService employeeProfileService;
 
+    // Mocked only to satisfy SecurityConfig's / JwtAuthenticationFilter's real-bean
+    // dependencies; not stubbed or exercised directly, since these tests install the
+    // Authentication principal directly (via SecurityMockMvcRequestPostProcessors.user
+    // or @WithMockUser) instead of going through real JWT parsing / user lookup.
     @MockitoBean
     private JwtUtil jwtUtil;
     @MockitoBean
@@ -75,12 +99,20 @@ class EmployeeProfileControllerTest {
 
     // ---------- GET /api/employee/profile/me ----------
 
+    // No Authorization/principal supplied: anonymous caller. Denied by both
+    // SecurityConfig's filter-level "/api/employee/profile/**" -> hasRole("EMPLOYEE")
+    // rule and the controller's class-level @PreAuthorize. No custom
+    // AuthenticationEntryPoint is configured, so anonymous requests get 403 Forbidden
+    // via the default Http403ForbiddenEntryPoint - never 401.
     @Test
     void getMyProfile_returns403_forAnonymousCaller() throws Exception {
         mvc.perform(get("/api/employee/profile/me"))
                 .andExpect(status().isForbidden());
     }
 
+    // Authenticated but wrong role (PASSENGER): denied by both the SecurityConfig
+    // filter-level rule and the @PreAuthorize("hasRole('EMPLOYEE')") check. Wrong-role
+    // requests get the same 403 as anonymous ones (no dedicated 401 path exists here).
     @Test
     @WithMockUser(roles = "PASSENGER")
     void getMyProfile_returns403_forNonEmployeeRole() throws Exception {
@@ -88,6 +120,10 @@ class EmployeeProfileControllerTest {
                 .andExpect(status().isForbidden());
     }
 
+    // Real EMPLOYEE CustomUserDetails installed as the principal (bypassing the mocked
+    // CustomUserDetailsService) so @AuthenticationPrincipal resolves to a usable
+    // instance; passes both security layers, and with EmployeeProfileService stubbed to
+    // return a profile for that user's id, the controller responds 200 OK.
     @Test
     void getMyProfile_returns200_forEmployeePrincipal() throws Exception {
         CustomUserDetails principal = employeePrincipal();
@@ -99,6 +135,8 @@ class EmployeeProfileControllerTest {
 
     // ---------- PUT /api/employee/profile/me ----------
 
+    // Same anonymous-caller reasoning as the GET test above: denied by both security
+    // layers, resulting in 403 Forbidden (default Http403ForbiddenEntryPoint), not 401.
     @Test
     void updateMyProfile_returns403_forAnonymousCaller() throws Exception {
         mvc.perform(put("/api/employee/profile/me")
@@ -107,6 +145,8 @@ class EmployeeProfileControllerTest {
                 .andExpect(status().isForbidden());
     }
 
+    // Same wrong-role reasoning as the GET test above: a PASSENGER is denied by both
+    // the filter-level rule and @PreAuthorize, yielding 403 (not 401).
     @Test
     @WithMockUser(roles = "PASSENGER")
     void updateMyProfile_returns403_forNonEmployeeRole() throws Exception {
@@ -116,6 +156,8 @@ class EmployeeProfileControllerTest {
                 .andExpect(status().isForbidden());
     }
 
+    // Real EMPLOYEE principal passes both security layers; EmployeeProfileService is
+    // stubbed to return the updated profile, so the controller responds 200 OK.
     @Test
     void updateMyProfile_returns200_forEmployeePrincipal() throws Exception {
         CustomUserDetails principal = employeePrincipal();
