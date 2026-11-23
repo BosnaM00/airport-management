@@ -179,7 +179,7 @@ class FlightControllerTest {
     @Test
     @WithMockUser(roles = "PASSENGER")
     void list_returns200_forPassengerRole() throws Exception {
-        when(flightService.list(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        when(flightService.list(any(), any()))
                 .thenReturn(new PageImpl<>(List.of(sampleFlightResponse())));
 
         mvc.perform(get("/api/flights"))
@@ -190,7 +190,7 @@ class FlightControllerTest {
     @Test
     @WithMockUser(roles = "EMPLOYEE")
     void list_returns200_forEmployeeRole() throws Exception {
-        when(flightService.list(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        when(flightService.list(any(), any()))
                 .thenReturn(new PageImpl<>(List.of()));
 
         mvc.perform(get("/api/flights"))
@@ -201,7 +201,7 @@ class FlightControllerTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void list_returns200_forAdminRole() throws Exception {
-        when(flightService.list(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        when(flightService.list(any(), any()))
                 .thenReturn(new PageImpl<>(List.of()));
 
         mvc.perform(get("/api/flights"))
@@ -245,7 +245,7 @@ class FlightControllerTest {
     // FlightService.listForPassenger(...) is stubbed, so the controller responds 200 OK.
     @Test
     void listMyFlights_returns200_forPassengerPrincipal() throws Exception {
-        when(flightService.listForPassenger(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+        when(flightService.listForPassenger(any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(sampleFlightResponse())));
 
         mvc.perform(get("/api/flights/my").with(user(passengerPrincipal())))

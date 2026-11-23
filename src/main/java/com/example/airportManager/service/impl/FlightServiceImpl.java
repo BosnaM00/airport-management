@@ -2,13 +2,13 @@ package com.example.airportManager.service.impl;
 
 import com.example.airportManager.dto.flight.FlightCreateDTO;
 import com.example.airportManager.dto.flight.FlightDetailResponseDTO;
+import com.example.airportManager.dto.flight.FlightFilterDTO;
 import com.example.airportManager.dto.flight.FlightResponseDTO;
 import com.example.airportManager.dto.flight.PassengerInfoDTO;
 import com.example.airportManager.exception.ConflictException;
 import com.example.airportManager.mapper.FlightMapper;
 import com.example.airportManager.model.Booking;
 import com.example.airportManager.model.Flight;
-import com.example.airportManager.model.FlightStatus;
 import com.example.airportManager.model.Route;
 import com.example.airportManager.model.Aircraft;
 import com.example.airportManager.repository.AircraftRepository;
@@ -27,8 +27,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -46,41 +44,20 @@ public class FlightServiceImpl implements FlightService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<FlightResponseDTO> list(
-            Pageable pageable,
-            Optional<String> code,
-            Optional<LocalDateTime> dateFrom,
-            Optional<LocalDateTime> dateTo,
-            Optional<Long> routeId,
-            Optional<FlightStatus> status,
-            Optional<String> origin,
-            Optional<String> destination,
-            Optional<LocalDate> date
-    ) {
-        Specification<Flight> spec = Specification.where(null);
-        if (code.isPresent()) {
-            spec = spec.and(FlightSpecifications.hasCode(code.get()));
-        }
-        if (dateFrom.isPresent() || dateTo.isPresent()) {
-            spec = spec.and(FlightSpecifications.departureBetween(dateFrom.orElse(null), dateTo.orElse(null)));
-        }
-        if (routeId.isPresent()) {
-            spec = spec.and(FlightSpecifications.hasRouteId(routeId.get()));
-        }
-        if (status.isPresent()) {
-            spec = spec.and(FlightSpecifications.hasStatus(status.get()));
-        }
-        if (origin.isPresent()) {
-            spec = spec.and(FlightSpecifications.hasOriginCity(origin.get()));
-        }
-        if (destination.isPresent()) {
-            spec = spec.and(FlightSpecifications.hasDestCity(destination.get()));
-        }
-        if (date.isPresent()) {
-            spec = spec.and(FlightSpecifications.departureOnDate(date.get()));
-        }
+    public Page<FlightResponseDTO> list(FlightFilterDTO filter, Pageable pageable) {
+        Specification<Flight> spec = buildSpecification(filter);
         return flightRepository.findAll(spec, pageable)
                 .map(flightMapper::toResponse);
+    }
+
+    private Specification<Flight> buildSpecification(FlightFilterDTO filter) {
+        return Specification.where(FlightSpecifications.hasCode(filter.code()))
+                .and(FlightSpecifications.departureBetween(filter.dateFrom(), filter.dateTo()))
+                .and(FlightSpecifications.hasRouteId(filter.routeId()))
+                .and(FlightSpecifications.hasStatus(filter.status()))
+                .and(FlightSpecifications.hasOriginCity(filter.origin()))
+                .and(FlightSpecifications.hasDestCity(filter.destination()))
+                .and(FlightSpecifications.departureOnDate(filter.date()));
     }
 
     @Override
@@ -142,18 +119,7 @@ public class FlightServiceImpl implements FlightService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<FlightResponseDTO> listForPassenger(
-            UUID passengerId,
-            Pageable pageable,
-            Optional<String> code,
-            Optional<LocalDateTime> dateFrom,
-            Optional<LocalDateTime> dateTo,
-            Optional<Long> routeId,
-            Optional<FlightStatus> status,
-            Optional<String> origin,
-            Optional<String> destination,
-            Optional<LocalDate> date
-    ) {
+    public Page<FlightResponseDTO> listForPassenger(UUID passengerId, FlightFilterDTO filter, Pageable pageable) {
         List<Booking> bookings = bookingRepository.findByPassengerProfileUserId(passengerId);
         List<Long> flightIds = bookings.stream()
                 .map(b -> b.getFlight().getId())
@@ -163,28 +129,8 @@ public class FlightServiceImpl implements FlightService {
             return new PageImpl<>(Collections.emptyList(), pageable, 0);
         }
 
-        Specification<Flight> spec = Specification.where((root, query, cb) -> root.get("id").in(flightIds));
-        if (code.isPresent()) {
-            spec = spec.and(FlightSpecifications.hasCode(code.get()));
-        }
-        if (dateFrom.isPresent() || dateTo.isPresent()) {
-            spec = spec.and(FlightSpecifications.departureBetween(dateFrom.orElse(null), dateTo.orElse(null)));
-        }
-        if (routeId.isPresent()) {
-            spec = spec.and(FlightSpecifications.hasRouteId(routeId.get()));
-        }
-        if (status.isPresent()) {
-            spec = spec.and(FlightSpecifications.hasStatus(status.get()));
-        }
-        if (origin.isPresent()) {
-            spec = spec.and(FlightSpecifications.hasOriginCity(origin.get()));
-        }
-        if (destination.isPresent()) {
-            spec = spec.and(FlightSpecifications.hasDestCity(destination.get()));
-        }
-        if (date.isPresent()) {
-            spec = spec.and(FlightSpecifications.departureOnDate(date.get()));
-        }
+        Specification<Flight> spec = Specification.<Flight>where((root, query, cb) -> root.get("id").in(flightIds))
+                .and(buildSpecification(filter));
         return flightRepository.findAll(spec, pageable)
                 .map(flightMapper::toResponse);
     }
