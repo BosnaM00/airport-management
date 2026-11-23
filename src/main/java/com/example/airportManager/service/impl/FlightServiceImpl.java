@@ -192,7 +192,7 @@ public class FlightServiceImpl implements FlightService {
     @Override
     @Transactional(readOnly = true)
     public FlightDetailResponseDTO getById(Long id, boolean includePassengers) {
-        Flight flight = flightRepository.findById(id)
+        Flight flight = flightRepository.findDetailById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Flight not found with id: " + id));
 
         List<PassengerInfoDTO> passengers = Collections.emptyList();
@@ -217,7 +217,7 @@ public class FlightServiceImpl implements FlightService {
     @Override
     @Transactional(readOnly = true)
     public FlightDetailResponseDTO getByIdForPassenger(Long id, UUID passengerId) {
-        Flight flight = flightRepository.findById(id)
+        Flight flight = flightRepository.findDetailById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Flight not found with id: " + id));
 
         if (!bookingRepository.existsByFlightIdAndPassengerProfileUserId(id, passengerId)) {
