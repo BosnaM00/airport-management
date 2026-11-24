@@ -19,6 +19,7 @@ import com.example.airportManager.service.FlightService;
 import com.example.airportManager.spec.FlightSpecifications;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -35,6 +36,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FlightServiceImpl implements FlightService {
@@ -86,7 +88,9 @@ public class FlightServiceImpl implements FlightService {
     @Override
     @Transactional
     public FlightResponseDTO create(FlightCreateDTO dto) {
+        log.info("Creating flight: code={}, routeId={}", dto.code(), dto.routeId());
         if (flightRepository.findByCode(dto.code()).isPresent()) {
+            log.warn("Flight creation rejected: code={} already exists", dto.code());
             throw new ConflictException("Flight with code " + dto.code() + " already exists");
         }
 
@@ -104,17 +108,20 @@ public class FlightServiceImpl implements FlightService {
         }
 
         Flight saved = flightRepository.save(flight);
+        log.info("Flight created: flightId={}, code={}", saved.getId(), saved.getCode());
         return flightMapper.toResponse(saved);
     }
 
     @Override
     @Transactional
     public FlightResponseDTO update(Long id, FlightCreateDTO dto) {
+        log.info("Updating flight: flightId={}", id);
         Flight flight = flightRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Flight not found with id: " + id));
 
         Optional<Flight> existingWithCode = flightRepository.findByCode(dto.code());
         if (existingWithCode.isPresent() && !existingWithCode.get().getId().equals(id)) {
+            log.warn("Flight update rejected: flightId={}, code={} already exists", id, dto.code());
             throw new ConflictException("Flight with code " + dto.code() + " already exists");
         }
 
@@ -137,6 +144,7 @@ public class FlightServiceImpl implements FlightService {
         }
 
         Flight updated = flightRepository.save(flight);
+        log.info("Flight updated: flightId={}, code={}", updated.getId(), updated.getCode());
         return flightMapper.toResponse(updated);
     }
 
@@ -197,6 +205,7 @@ public class FlightServiceImpl implements FlightService {
 
         List<PassengerInfoDTO> passengers = Collections.emptyList();
         if (includePassengers) {
+            log.info("Passenger manifest (with passport data) accessed: flightId={}", id);
             List<Booking> bookings = bookingRepository.findByFlightId(id);
             passengers = bookings.stream()
                     .map(b -> new PassengerInfoDTO(
@@ -249,9 +258,11 @@ public class FlightServiceImpl implements FlightService {
     @Override
     @Transactional
     public void delete(Long id) {
+        log.info("Deleting flight: flightId={}", id);
         if (!flightRepository.existsById(id)) {
             throw new EntityNotFoundException("Flight not found with id: " + id);
         }
         flightRepository.deleteById(id);
+        log.info("Flight deleted: flightId={}", id);
     }
 }
